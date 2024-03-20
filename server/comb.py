@@ -1,6 +1,6 @@
 import socket
 import sys
-from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QLineEdit
+from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout
 from PyQt6.QtGui import QPixmap
 from threading import Thread
 
@@ -18,6 +18,7 @@ class ClientListener(Thread):
 
     def run(self):
         connection, address = self.listener.accept()
+        print('Клиент на месте')
         self.signal_handler(connection)
 
 class MainWindow(QMainWindow):
@@ -53,7 +54,7 @@ class MainWindow(QMainWindow):
         screen_geometry = app.primaryScreen().availableGeometry()
 
         self.layout = QVBoxLayout()
-        self.pixmap = QPixmap('img/cats.jpg')
+        self.pixmap = QPixmap('server/img/cats.jpg')
         self.label = QLabel(self)
         self.label.setPixmap(self.pixmap)
         self.layout.addWidget(self.label)
