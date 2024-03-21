@@ -1,10 +1,11 @@
 import socket
-import random
-from PyQt6 import QtGui, QtMultimedia
+from PyQt6 import QtGui, QtMultimedia, QtCore, QtMultimediaWidgets
 from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QLineEdit, QPushButton
 from PyQt6.QtGui import QPixmap
+from PyQt6.QtCore import QUrl
 import pygame
 from threading import Thread
+
 
 class GradientWidget(QWidget):
     def __init__(self, parent=None):
@@ -17,30 +18,33 @@ class GradientWidget(QWidget):
         grad.setColorAt(1, QtGui.QColor(240, 100, 100))
         qp.fillRect(self.rect(), grad)
 
-class ImageClient(QMainWindow):
-    def __init__(self, server_ip):
-        super().__init__()
-        
-        screen_geometry = app.primaryScreen().availableGeometry()
-        self.setGeometry(screen_geometry)
 
-        self.layout = QVBoxLayout()
-        self.label = QLabel(self)
+class ImageClient(QMainWindow): 
+    def __init__(self, server_ip): 
+        super().__init__() 
+         
+        screen_geometry = app.primaryScreen().availableGeometry() 
+        self.setGeometry(screen_geometry) 
+ 
+        self.layout = QVBoxLayout() 
+        self.label = QLabel(self) 
         self.pixmap_list = [QPixmap('img/first.jpg'), QPixmap('img/second.jpg'), QPixmap('img/third.jpg'), QPixmap('img/four.jpg'), QPixmap('img/five.jpeg'), QPixmap('img/six.jpg'), 
                             QPixmap('img/seven.jpg'), QPixmap('img/eight.jpeg'), QPixmap('img/nine.jpg'), QPixmap('img/ten.jpg')]
-        self.video_list = ['video/sweat_cat1.mp4', 'video/sweat_cats2.mp4', 'video/yoda.mp4']        
-        self.current_index = 0
-        self.label.setPixmap(self.pixmap_list[self.current_index])
-        self.label.setGeometry(0,0,screen_geometry.width(),screen_geometry.height())
-        self.label.setScaledContents(True)
-        self.layout.addWidget(self.label)
-
+        self.scr_list = [QPixmap('sweat_cat/sweat_cat1.png'), QPixmap('sweat_cat/sweat_cat2.png')]
+        self.screamer_list = [('sweat_cat/sweat_cat1.mp3'), ('sweat_cat/sweat_cat2.mp3')]        
+        self.current_index = 0 
+        self.cur_index = 0
+        self.label.setPixmap(self.pixmap_list[self.current_index]) 
+        self.label.setGeometry(0,0,screen_geometry.width(),screen_geometry.height()) 
+        self.label.setScaledContents(True) 
+        self.layout.addWidget(self.label) 
+ 
         self.setLayout(self.layout)
         self.setWindowTitle('Мой котик успешно подключился, целую!')
 
         self.setWindowIcon(QtGui.QIcon('img/chmok.webp'))
 
-         # Инициализация pygame
+        # Инициализация pygame
         pygame.mixer.init()
 
     def play_sound(self, sound_file):
@@ -48,37 +52,17 @@ class ImageClient(QMainWindow):
         pygame.mixer.music.load(sound_file)
         pygame.mixer.music.play()
 
-    def randomizer(self):
-        # Выбираем случайный индекс изображения или видео
-        is_image = random.choices([True, False], weights=[8, 2])[0]
+ 
+    def change_image(self): 
+        self.current_index = (self.current_index + 1) % len(self.pixmap_list) 
+        self.label.setPixmap(self.pixmap_list[self.current_index]) 
 
-        if is_image:
-            self.display_image()
-        else:
-            self.display_video()
+    def change_image_and_sound(self):
+        self.cur_index = (self.cur_index + 1) % len(self.scr_list)
+        self.label.setPixmap(self.scr_list[self.cur_index])
+        self.play_sound(self.screamer_list[self.cur_index])
 
-    def display_image(self):
-        # Отображаем случайное изображение
-        image_index = random.randint(0, len(self.pixmap_list) - 1)
-        self.label.setPixmap(self.pixmap_list[image_index])
-
-    def display_video(self):
-        # Воспроизводим случайное видео
-        video_index = random.randint(0, len(self.video_list) - 1)
-        video_file = self.video_list[video_index]
-
-        self.video_widget = QtMultimedia.QVideoWidget(self)
-        self.layout.addWidget(self.video_widget)
-
-        player = QtMultimedia.QMediaPlayer(self)
-        player.setVideoOutput(self.video_widget)
-        player.setMedia(QtMultimedia.QMediaContent(QtGui.QUrl.fromLocalFile(video_file)))
-        player.play()
-
-    def change_image(self):
-        self.current_index = (self.current_index + 1) % len(self.pixmap_list)
-        self.label.setPixmap(self.pixmap_list[self.current_index])
-
+ 
 class ConnectionWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -119,32 +103,38 @@ class ConnectionWindow(QMainWindow):
         # Устанавливаем фавиконку
         self.setWindowIcon(QtGui.QIcon('img/faviconka.jpg'))
 
+        # Создаем переменную для хранения окна ImageClient
+        self.image_client_window = None
+
     def connect_to_server(self):
         ip_address = self.ip_input.text()
-        # Для простоты сейчас просто передаем его в ImageClient
-        self.image_client_window = ImageClient(ip_address)
-        self.image_client_window.show()
+        if not self.image_client_window:  # Создаем только один экземпляр ImageClient
+            self.image_client_window = ImageClient(ip_address)
+            self.image_client_window.play_sound('music/pennywise-hello_mp3cut.net.mp3')
+            self.image_client_window.show()
+
         self.close()
 
-        # Start a thread for connecting to the server and listening for commands
+        # Запускаем поток для подключения к серверу и прослушивания команд
         client_thread = Thread(target=connect_to_server, args=(ip_address, self.image_client_window))
         client_thread.start()
-
-# Function to connect to server and listen for commands
-def connect_to_server(server_ip, window):
-    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_address = (server_ip, 12333)  # Replace 'server_ip' with the actual IP address of the server
-    client.connect(server_address)
-
-    while True:
-        command = client.recv(1024).decode('utf-8')
-        if command == "change_image":
-            window.change_image()
-
-app = QApplication([])
-
-# Создаем и отображаем окно подключения
-connection_window = ConnectionWindow()
-connection_window.show()
-
+# Функция для подключения к серверу и прослушивания команд
+def connect_to_server(server_ip, window): 
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
+    server_address = (server_ip, 12333) 
+    client.connect(server_address) 
+ 
+    while True: 
+        command = client.recv(1024).decode('utf-8') 
+        if command == "change_image": 
+            window.change_image() 
+        elif command == "screamer": 
+            window.change_image_and_sound()
+ 
+app = QApplication([]) 
+ 
+# Создаем и отображаем окно подключения 
+connection_window = ConnectionWindow() 
+connection_window.show() 
+ 
 app.exec()
