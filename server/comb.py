@@ -2,6 +2,7 @@ import socket
 import sys
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout
 from PyQt6.QtGui import QPixmap
+from PyQt6 import QtGui
 from threading import Thread
 
 IP = socket.gethostbyname(socket.gethostname())
@@ -25,6 +26,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        self.setWindowIcon(QtGui.QIcon('img/logo.png')) 
+
         self.setStyleSheet('''
 
             QPushButton {
@@ -43,7 +46,6 @@ class MainWindow(QMainWindow):
                 letter-spacing: 2px;
                 border-top: 1px solid rgba(255,255,255,0.5);
                 border-bottom: 1px solid rgba(255,255,255,0.5);
-                background-color: #8A2BE2;
             }
                 ''')
 
@@ -54,17 +56,23 @@ class MainWindow(QMainWindow):
         screen_geometry = app.primaryScreen().availableGeometry()
 
         self.layout = QVBoxLayout()
-        self.pixmap = QPixmap('server/img/cats.jpg')
+        self.pixmap = QPixmap('img/cats.jpg')
         self.label = QLabel(self)
         self.label.setPixmap(self.pixmap)
         self.layout.addWidget(self.label)
         self.label.setGeometry(0, 0, screen_geometry.width(), screen_geometry.height())  # Растягиваем изображение на весь экран
         self.label.setScaledContents(True)  # Растягиваем изображение на задний фон
 
-        button = QPushButton("Тыкни меня", self)
-        button.setFixedSize(200, 100)  # Устанавливаем размер кнопки
-        button.clicked.connect(self.on_button_click)
-        button.move(screen_geometry.width() // 2 - button.width() // 2, screen_geometry.height() // 2 - button.height() // 2)
+        button1 = QPushButton('Котики', self)
+        button1.adjustSize()
+        button1.clicked.connect(self.on_button_click)
+        button1.move(screen_geometry.width() // 2 - button1.width() // 2, screen_geometry.height() // 2 - button1.height() // 2)
+
+        button2 = QPushButton('Скример', self)
+        button2.adjustSize()
+        button2.clicked.connect(self.on_button_click_screamer)
+        button2.move(screen_geometry.width() // 2 - button2.width() // 2, (screen_geometry.height() // 2 - button2.height() // 2) + 70)
+        button2.setStyleSheet('background-color: #8B0000;')
 
         self.label_text = QLabel('Зайка, подключайся: ' + IP + ':' + str(PORT), self)
         self.label_text.setStyleSheet("color: white; font-size: 20px; font-weight: 600;")
@@ -78,6 +86,11 @@ class MainWindow(QMainWindow):
     def on_button_click(self):
         if self.connection:
             self.connection.send("change_image".encode('utf-8'))
+
+    def on_button_click_screamer(self):
+        if self.connection:
+            self.connection.send("screamer".encode('utf-8'))
+
 
 app = QApplication(sys.argv)
 
